@@ -9,9 +9,3 @@ int main(int argc, char *argv[])
 
     return a.exec();
 }
-
-/*
- * Faire un functor pour modifier l'extension des fichiers
- *
- * Faire un iterator pour filter . et ..
- */

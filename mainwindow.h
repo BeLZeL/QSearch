@@ -24,8 +24,8 @@ private:
 
     int m_nb_dirs;
     QLabel *l_dir;
-    QLineEdit *le_to_find;
-    QTextEdit *te_left;
+    QLineEdit *le_pattern;
+    QTextEdit *te_results;
     QPushButton *pb_scan;
 };
 
