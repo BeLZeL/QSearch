@@ -39,8 +39,9 @@ MainWindow::~MainWindow()
 
 void MainWindow::slot_scan()
 {
-    int nb_found = 0;
+    te_results->clear();
 
+    int nb_found = 0;
     nb_found += scan("C:\\");
     nb_found += scan("E:\\");
     nb_found += scan("F:\\");
@@ -72,23 +73,23 @@ int MainWindow::scan(const QString &str_dir)
         }
     }
 
-    // Scan subdirs
-    if ( nb_found == 0 )
-    {
-        for ( int i=0 ; nb_found == 0 && i<files.size() ; ++i )
-        {
-            QString str = files[i];
-            //qApp->processEvents();
-            refresh();
-            nb_found = scan(str_dir + "\\" + str);
-        }
-    }
     // Launch explorer if found
-    else
+    /*
+    if ( nb_found > 0 )
     {
         QString final = str_dir;
         final.replace("\\", "/");
         QDesktopServices::openUrl(QUrl("file:///"+final, QUrl::TolerantMode));
+    }
+    */
+
+    // Scan subdirs
+    for ( int i=0 ; i<files.size() ; ++i )
+    {
+        QString str = files[i];
+        //qApp->processEvents();
+        refresh();
+        nb_found = scan(str_dir + "\\" + str);
     }
 
     //qApp->processEvents();
