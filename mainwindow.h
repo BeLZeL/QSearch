@@ -6,6 +6,7 @@
 #include <QLineEdit>
 #include <QTextEdit>
 #include <QPushButton>
+#include <QDateTime>
 
 class MainWindow : public QWidget
 {
@@ -27,6 +28,7 @@ private:
     QLineEdit *le_pattern;
     QTextEdit *te_results;
     QPushButton *pb_scan;
+    QDateTime from;
 };
 
 #endif // MAINWINDOW_H

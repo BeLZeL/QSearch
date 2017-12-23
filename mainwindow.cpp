@@ -4,11 +4,12 @@
 #include <QDesktopServices>
 #include <QDir>
 #include <QVBoxLayout>
+#include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent) :
     QWidget(parent)
 {
-    le_pattern = new QLineEdit("Pattern");
+    le_pattern = new QLineEdit("");
     pb_scan    = new QPushButton("Scan !");
     l_dir      = new QLabel();
     te_results = new QTextEdit();
@@ -22,13 +23,17 @@ MainWindow::MainWindow(QWidget *parent) :
     setLayout(vbox);
     showMaximized();
 
+    from = QDateTime::currentDateTime().addSecs(-5*24*60*60);
+
+    qDebug() << from;
+
     QObject::connect(pb_scan, SIGNAL(clicked()), this, SLOT(slot_scan()));
 }
 
 void MainWindow::refresh()
 {
     static int count = 0;
-    if ( count++ % 2500 == 0 )
+    if ( count++ % 1000 == 0 )
         qApp->processEvents();
 }
 
@@ -42,12 +47,12 @@ void MainWindow::slot_scan()
     te_results->clear();
 
     int nb_found = 0;
-    nb_found += scan("C:\\");
+    //nb_found += scan("C:\");
     nb_found += scan("E:\\");
     nb_found += scan("F:\\");
     nb_found += scan("G:\\");
-    nb_found += scan("H:\\");
-    nb_found += scan("Z:\\");
+    //nb_found += scan("H:\");
+    //nb_found += scan("Z:\");
     qApp->processEvents();
 }
 
@@ -55,45 +60,80 @@ void MainWindow::slot_scan()
 // Otherwise return nb_errors
 int MainWindow::scan(const QString &str_dir)
 {
+    // File, returns
     if ( ! QFileInfo(str_dir).isDir() )
         return 0;
 
     QDir dir = QDir(str_dir);
     l_dir->setText(dir.absolutePath());
-
-    QStringList files  = dir.entryList(QDir::AllDirs | QDir::Files | QDir::NoDot | QDir::NoDotDot);
-
     int nb_found = 0;
-    for ( int i=0 ; i<files.size() ; ++i )
+    refresh();
+
+    if ( !le_pattern->text().isEmpty() )
     {
-        if ( files[i].contains(le_pattern->text(), Qt::CaseInsensitive) )
+        QStringList files  = dir.entryList(QDir::AllDirs | QDir::Files | QDir::NoDot | QDir::NoDotDot);
+
+        for ( int i=0 ; i<files.size() ; ++i )
         {
-            te_results->append("<font color=green>" + str_dir + "\\" + files[i] + "</font>");
-            ++nb_found;
+            if ( files[i].contains(le_pattern->text(), Qt::CaseInsensitive) )
+            {
+                te_results->append("<font color=green>" + str_dir + files[i] + "</font>");
+                ++nb_found;
+                refresh();
+            }
+        }
+
+        // Launch explorer if found
+        /*
+        if ( nb_found > 0 )
+        {
+            QString final = str_dir;
+            final.replace("\\", "/");
+            QDesktopServices::openUrl(QUrl("file:///"+final, QUrl::TolerantMode));
+        }
+        */
+
+        // Scan subdirs
+        for ( int i=0 ; i<files.size() ; ++i )
+        {
+            QString str = files[i];
+            nb_found = scan(str_dir + str + "\\");
         }
     }
-
-    // Launch explorer if found
-    /*
-    if ( nb_found > 0 )
+    else
     {
-        QString final = str_dir;
-        final.replace("\\", "/");
-        QDesktopServices::openUrl(QUrl("file:///"+final, QUrl::TolerantMode));
-    }
-    */
+        QList<QFileInfo> files = dir.entryInfoList(QDir::AllDirs | QDir::Files | QDir::NoDot | QDir::NoDotDot);
 
-    // Scan subdirs
-    for ( int i=0 ; i<files.size() ; ++i )
-    {
-        QString str = files[i];
-        //qApp->processEvents();
-        refresh();
-        nb_found = scan(str_dir + "\\" + str);
-    }
+        int nb_found = 0;
+        for ( int i=0 ; i<files.size() ; ++i )
+        {
+            if ( files[i].isDir() )
+            {
+                nb_found = scan(str_dir + files[i].fileName() + "\\");
+            }
+            else
+            {
+                //qDebug() << files[i].fileName();
+                if ( files[i].created() >= from || files[i].lastModified() >= from )
+                {
+                    te_results->append("<font color=green>" + str_dir + files[i].fileName() + "</font>");
+                    refresh();
+                    ++nb_found;
+                    qDebug() << files[i].lastModified();
+                }
+            }
 
-    //qApp->processEvents();
-    refresh();
+            // Launch explorer if found
+            /**/
+            if ( nb_found > 0 )
+            {
+                QString final = str_dir;
+                final.replace("\\", "/");
+                QDesktopServices::openUrl(QUrl("file:///"+final, QUrl::TolerantMode));
+            }
+            /**/
+        }
+    }
 
     return nb_found;
 }
